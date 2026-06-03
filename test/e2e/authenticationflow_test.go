@@ -41,8 +41,8 @@ func waitForFlowReady(t *testing.T, name string) *keycloakv1beta1.KeycloakAuthen
 func TestKeycloakAuthenticationFlowE2E(t *testing.T) {
 	skipIfNoCluster(t)
 
-	instanceName, instanceNS := getOrCreateInstance(t)
-	realmName := createTestRealm(t, instanceName, instanceNS, "authflow")
+	instanceName, _ := getOrCreateInstance(t)
+	realmName := createTestRealm(t, instanceName, "authflow")
 
 	t.Run("SimpleFlow", func(t *testing.T) {
 		flowAlias := fmt.Sprintf("simple-flow-%d", time.Now().UnixNano())

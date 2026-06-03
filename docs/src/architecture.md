@@ -170,10 +170,11 @@ The two valid deployment patterns are:
    (cluster-scoped) referenced via `clusterInstanceRef` / `clusterRealmRef` from
    child CRDs in any namespace. Use this for cross-namespace or cluster-wide sharing.
 
-Every namespaced CRD that targets a realm supports both modes. The three CRDs
+Every namespaced CRD that targets a realm supports both modes. The four CRDs
 without a direct realm reference (`KeycloakProtocolMapper`,
-`KeycloakUserCredential`, `KeycloakRoleMapping`) inherit the realm transitively
-from the resource they reference, and that resource must also be in the same namespace.
+`KeycloakUserCredential`, `KeycloakRoleMapping`, `KeycloakIdentityProviderMapper`)
+inherit the realm transitively from the resource they reference, and that
+resource must also be in the same namespace.
 
 ## Finalizers
 

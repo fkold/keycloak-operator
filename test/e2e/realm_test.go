@@ -566,7 +566,7 @@ func TestKeycloakRealmE2E(t *testing.T) {
 // realmRef is pruned by the CRD schema and the operator resolves in the CR's own namespace.
 func TestSameNamespaceRefEnforcement(t *testing.T) {
 	skipIfNoCluster(t)
-	instanceName, instanceNS := getOrCreateInstance(t)
+	instanceName, _ := getOrCreateInstance(t)
 
 	t.Run("InstanceRefNamespacePruned", func(t *testing.T) {
 		realmName := fmt.Sprintf("same-ns-inst-%d", time.Now().UnixNano())
@@ -597,7 +597,7 @@ func TestSameNamespaceRefEnforcement(t *testing.T) {
 	})
 
 	t.Run("RealmRefNamespacePruned", func(t *testing.T) {
-		realmName := createTestRealm(t, instanceName, instanceNS, "same-ns-realmref")
+		realmName := createTestRealm(t, instanceName, "same-ns-realmref")
 
 		clientName := fmt.Sprintf("same-ns-client-%d", time.Now().UnixNano())
 		obj := newUnstructured("KeycloakClient", clientName, map[string]interface{}{
