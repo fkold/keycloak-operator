@@ -94,8 +94,8 @@ func TestKeycloakRealmE2E(t *testing.T) {
 		t.Logf("Realm correctly failed with invalid instance ref, message: %s", updated.Status.Message)
 	})
 
-	t.Run("InvalidRealmDefinition", func(t *testing.T) {
-		realmName := fmt.Sprintf("realm-invalid-def-%d", time.Now().UnixNano())
+	t.Run("EmptyDefinitionRealmFallsBackToName", func(t *testing.T) {
+		realmName := fmt.Sprintf("realm-empty-def-%d", time.Now().UnixNano())
 
 		realm := &keycloakv1beta1.KeycloakRealm{
 			ObjectMeta: metav1.ObjectMeta{
@@ -104,7 +104,8 @@ func TestKeycloakRealmE2E(t *testing.T) {
 			},
 			Spec: keycloakv1beta1.KeycloakRealmSpec{
 				InstanceRef: &keycloakv1beta1.ResourceRef{Name: instanceName},
-				// Valid JSON but with conflicting/problematic realm config
+				// Empty realm key and no spec.realmName: the resolver must fall
+				// back to metadata.name, so the realm reconciles under that name.
 				Definition: rawJSON(`{"realm": "", "enabled": true}`),
 			},
 		}
@@ -113,16 +114,26 @@ func TestKeycloakRealmE2E(t *testing.T) {
 			k8sClient.Delete(ctx, realm)
 		})
 
-		// Wait and verify the realm is NOT ready (empty realm name should fail)
-		time.Sleep(5 * time.Second)
+		err := wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
+			updated := &keycloakv1beta1.KeycloakRealm{}
+			if err := k8sClient.Get(ctx, types.NamespacedName{
+				Name:      realm.Name,
+				Namespace: realm.Namespace,
+			}, updated); err != nil {
+				return false, nil
+			}
+			return updated.Status.Ready, nil
+		})
+		require.NoError(t, err, "Realm with empty definition realm should fall back to metadata.name and become ready")
+
 		updated := &keycloakv1beta1.KeycloakRealm{}
-		err := k8sClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, k8sClient.Get(ctx, types.NamespacedName{
 			Name:      realmName,
 			Namespace: testNamespace,
-		}, updated)
-		require.NoError(t, err)
-		require.False(t, updated.Status.Ready, "Realm with empty name should not be ready")
-		t.Logf("Realm correctly failed with invalid definition, message: %s", updated.Status.Message)
+		}, updated))
+		require.Equal(t, realmName, updated.Status.RealmName,
+			"resolved realm name should default to metadata.name")
+		t.Logf("Realm correctly fell back to metadata.name: %s", updated.Status.RealmName)
 	})
 
 	t.Run("SmtpSecretRef", func(t *testing.T) {

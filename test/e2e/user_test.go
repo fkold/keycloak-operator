@@ -93,9 +93,10 @@ func TestKeycloakUserE2E(t *testing.T) {
 		t.Logf("User correctly failed with invalid realm ref, message: %s", updated.Status.Message)
 	})
 
-	t.Run("InvalidUserDefinition", func(t *testing.T) {
-		userName := fmt.Sprintf("invalid-def-user-%d", time.Now().UnixNano())
-		// Valid JSON but with empty username which Keycloak won't accept
+	t.Run("EmptyDefinitionUsernameFallsBackToName", func(t *testing.T) {
+		userName := fmt.Sprintf("empty-username-user-%d", time.Now().UnixNano())
+		// Empty username and no spec.username: the resolver must fall back to
+		// metadata.name, so the user reconciles under that name.
 		userDef := rawJSON(`{"username": "", "enabled": true}`)
 		kcUser := &keycloakv1beta1.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
@@ -112,16 +113,26 @@ func TestKeycloakUserE2E(t *testing.T) {
 			k8sClient.Delete(ctx, kcUser)
 		})
 
-		// Wait and verify the user is NOT ready (empty username should fail)
-		time.Sleep(5 * time.Second)
+		err := wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
+			updated := &keycloakv1beta1.KeycloakUser{}
+			if err := k8sClient.Get(ctx, types.NamespacedName{
+				Name:      userName,
+				Namespace: testNamespace,
+			}, updated); err != nil {
+				return false, nil
+			}
+			return updated.Status.Ready, nil
+		})
+		require.NoError(t, err, "User with empty definition username should fall back to metadata.name and become ready")
+
 		updated := &keycloakv1beta1.KeycloakUser{}
-		err := k8sClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, k8sClient.Get(ctx, types.NamespacedName{
 			Name:      userName,
 			Namespace: testNamespace,
-		}, updated)
-		require.NoError(t, err)
-		require.False(t, updated.Status.Ready, "User with empty username should not be ready")
-		t.Logf("User correctly failed with invalid definition, message: %s", updated.Status.Message)
+		}, updated))
+		require.Equal(t, userName, updated.Status.Username,
+			"resolved username should default to metadata.name")
+		t.Logf("User correctly fell back to metadata.name: %s", updated.Status.Username)
 	})
 
 	t.Run("DuplicateUsername", func(t *testing.T) {
