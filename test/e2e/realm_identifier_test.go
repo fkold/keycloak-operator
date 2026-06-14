@@ -54,8 +54,8 @@ func TestKeycloakRealmIdentifierUnification(t *testing.T) {
 		t.Logf("realm %q created from spec.realmName only", realmInKeycloak)
 	})
 
-	// spec.realmName must win when it differs from definition.realm (Phase 1:
-	// spec wins, reconcile continues, and a soft mismatch warning is logged).
+	// spec.realmName must win when it differs from definition.realm: spec wins,
+	// reconcile continues, and a soft mismatch warning is logged.
 	t.Run("SpecOverridesDefinitionRealmMismatch", func(t *testing.T) {
 		crName := fmt.Sprintf("rn-mismatch-%d", time.Now().UnixNano())
 		specRealm := fmt.Sprintf("kc-spec-%d", time.Now().UnixNano())
