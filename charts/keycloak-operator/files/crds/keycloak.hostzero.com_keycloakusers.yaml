@@ -147,6 +147,10 @@ spec:
                 type: string
             type: object
             x-kubernetes-validations:
+            - message: exactly one of realmRef, clusterRealmRef, or clientRef must
+                be set
+              rule: '(has(self.realmRef) ? 1 : 0) + (has(self.clusterRealmRef) ? 1
+                : 0) + (has(self.clientRef) ? 1 : 0) == 1'
             - message: spec.username is required unless spec.clientRef is set (service
                 account user)
               rule: has(self.clientRef) || (has(self.username) && size(self.username)

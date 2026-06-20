@@ -131,6 +131,8 @@ spec:
             - realmName
             type: object
             x-kubernetes-validations:
+            - message: exactly one of instanceRef or clusterInstanceRef must be set
+              rule: has(self.instanceRef) != has(self.clusterInstanceRef)
             - message: spec.realmName is immutable once set
               rule: '!has(oldSelf.realmName) || self.realmName == oldSelf.realmName'
           status:

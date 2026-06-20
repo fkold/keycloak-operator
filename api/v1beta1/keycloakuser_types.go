@@ -6,6 +6,7 @@ import (
 )
 
 // KeycloakUserSpec defines the desired state of KeycloakUser
+// +kubebuilder:validation:XValidation:rule="(has(self.realmRef) ? 1 : 0) + (has(self.clusterRealmRef) ? 1 : 0) + (has(self.clientRef) ? 1 : 0) == 1",message="exactly one of realmRef, clusterRealmRef, or clientRef must be set"
 // +kubebuilder:validation:XValidation:rule="has(self.clientRef) || (has(self.username) && size(self.username) > 0)",message="spec.username is required unless spec.clientRef is set (service account user)"
 type KeycloakUserSpec struct {
 	// RealmRef is a reference to a KeycloakRealm

@@ -6,6 +6,7 @@ import (
 )
 
 // ClusterKeycloakRealmSpec defines the desired state of ClusterKeycloakRealm
+// +kubebuilder:validation:XValidation:rule="has(self.instanceRef) != has(self.clusterInstanceRef)",message="exactly one of instanceRef or clusterInstanceRef must be set"
 // +kubebuilder:validation:XValidation:rule="!has(oldSelf.realmName) || self.realmName == oldSelf.realmName",message="spec.realmName is immutable once set"
 type ClusterKeycloakRealmSpec struct {
 	// InstanceRef is a reference to a namespaced KeycloakInstance

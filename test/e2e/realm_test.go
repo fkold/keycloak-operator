@@ -462,22 +462,13 @@ func TestKeycloakRealmE2E(t *testing.T) {
 				}`),
 			},
 		}
-		require.NoError(t, k8sClient.Create(ctx, realm))
-		t.Cleanup(func() {
-			k8sClient.Delete(ctx, realm)
-		})
-
-		time.Sleep(5 * time.Second)
-		updated := &keycloakv1beta1.KeycloakRealm{}
-		err := k8sClient.Get(ctx, types.NamespacedName{
-			Name:      realmName,
-			Namespace: testNamespace,
-		}, updated)
-		require.NoError(t, err)
-		require.False(t, updated.Status.Ready,
-			"Realm with neither instanceRef nor clusterInstanceRef should not be ready")
-		require.Contains(t, updated.Status.Message, "either instanceRef or clusterInstanceRef must be specified")
-		t.Logf("Realm correctly failed with no instance ref, message: %s", updated.Status.Message)
+		err := k8sClient.Create(ctx, realm)
+		require.Error(t, err, "realm with neither instanceRef nor clusterInstanceRef must be rejected")
+		if err == nil {
+			t.Cleanup(func() { k8sClient.Delete(ctx, realm) })
+		}
+		require.Contains(t, err.Error(), "exactly one of instanceRef or clusterInstanceRef must be set")
+		t.Logf("Realm without instance ref correctly rejected: %v", err)
 	})
 
 	t.Run("ReconcileAfterManualDeletion", func(t *testing.T) {
